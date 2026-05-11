@@ -149,6 +149,9 @@ export interface Item extends BaseItem, StylingProps, TextProps, ValueProps {
   maxPoints?: number;
   pieLabelFields?: string[];
 
+  // Component group membership
+  groupId?: string;
+
   // Internal/runtime markers
   _missingVariableWarning?: string;
 

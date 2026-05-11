@@ -18,4 +18,9 @@ export {
   deleteGroup,
   updateItemsInPage,
   deleteItemsFromPage,
+  createComponentGroup,
+  ungroupComponent,
+  renameComponentGroup,
 } from '../../shared/store/pageSlice';
+
+export type { ComponentGroup } from '../../shared/store/pageSlice';

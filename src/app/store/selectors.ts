@@ -9,4 +9,5 @@ export {
   selectPages,
   selectProjectName,
   selectGroups,
+  selectActivePageComponentGroups,
 } from '../../shared/store/selectors';

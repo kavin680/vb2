@@ -1,17 +1,33 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import type { Item } from '../../../elements/ElementManager';
+import type { ComponentGroup } from '../../../app/store/pageSlice';
 
 interface UseCanvasSelectionOptions {
     items: Item[];
     scale: number;
     canvasRef: React.RefObject<HTMLDivElement | null>;
+    componentGroups: ComponentGroup[];
 }
 
-export function useCanvasSelection({ items, scale, canvasRef }: UseCanvasSelectionOptions) {
+export function useCanvasSelection({ items, scale, canvasRef, componentGroups }: UseCanvasSelectionOptions) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
+    const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
     const selectionStartRef = useRef<{ x: number; y: number } | null>(null);
     const ignoreNextClickRef = useRef(false);
+
+    const expandGroupSelection = useCallback((ids: string[]): string[] => {
+        if (editingGroupId) return ids;
+        const result = new Set(ids);
+        ids.forEach(id => {
+            const item = items.find(i => i.id === id);
+            if (item?.groupId) {
+                const group = componentGroups.find(g => g.id === item.groupId);
+                if (group) group.childIds.forEach(cid => result.add(cid));
+            }
+        });
+        return Array.from(result);
+    }, [items, componentGroups, editingGroupId]);
 
     const selectedItemsList = useMemo(
         () => items.filter(i => selectedIds.includes(i.id)),
@@ -33,20 +49,27 @@ export function useCanvasSelection({ items, scale, canvasRef }: UseCanvasSelecti
             if (selectedIds.includes(id)) {
                 setSelectedIds(ids => ids.filter(i => i !== id));
             } else {
-                setSelectedIds(ids => [...ids, id]);
+                const expanded = expandGroupSelection([id]);
+                setSelectedIds(ids => [...new Set([...ids, ...expanded])]);
             }
         } else {
-            setSelectedIds([id]);
+            setSelectedIds(expandGroupSelection([id]));
         }
         setIsPropertiesOpen(false);
-    }, [selectedIds]);
+    }, [selectedIds, expandGroupSelection]);
 
     const handleEdit = useCallback((id: string) => {
-        if (!selectedIds.includes(id)) {
+        const item = items.find(i => i.id === id);
+        if (item?.groupId && !editingGroupId) {
+            setEditingGroupId(item.groupId);
             setSelectedIds([id]);
+        } else {
+            if (!selectedIds.includes(id)) {
+                setSelectedIds([id]);
+            }
         }
         setIsPropertiesOpen(true);
-    }, [selectedIds]);
+    }, [selectedIds, items, editingGroupId]);
 
     const handleCanvasPointerDown = useCallback((e: React.PointerEvent) => {
         if (!canvasRef.current) return;
@@ -107,12 +130,13 @@ export function useCanvasSelection({ items, scale, canvasRef }: UseCanvasSelecti
                         return (ix < maxX && ix + iw > minX && iy < maxY && iy + ih > minY);
                     });
 
+                    const selectedItemIds = expandGroupSelection(selected.map(i => i.id));
                     if (ev.shiftKey || ev.ctrlKey || ev.metaKey) {
                         const newIds = new Set(selectedIds);
-                        selected.forEach(i => newIds.add(i.id));
+                        selectedItemIds.forEach(id => newIds.add(id));
                         setSelectedIds(Array.from(newIds));
                     } else {
-                        setSelectedIds(selected.map(i => i.id));
+                        setSelectedIds(selectedItemIds);
                     }
                 }
             }
@@ -122,7 +146,7 @@ export function useCanvasSelection({ items, scale, canvasRef }: UseCanvasSelecti
 
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
-    }, [items, scale, selectedIds, canvasRef]);
+    }, [items, scale, selectedIds, canvasRef, expandGroupSelection]);
 
     const handleCanvasClick = useCallback(() => {
         if (ignoreNextClickRef.current) {
@@ -130,6 +154,7 @@ export function useCanvasSelection({ items, scale, canvasRef }: UseCanvasSelecti
             return;
         }
         setSelectedIds([]);
+        setEditingGroupId(null);
     }, []);
 
     return {
@@ -139,6 +164,8 @@ export function useCanvasSelection({ items, scale, canvasRef }: UseCanvasSelecti
         selectedItemsList,
         isPropertiesOpen,
         setIsPropertiesOpen,
+        editingGroupId,
+        setEditingGroupId,
         handleSelect,
         handleEdit,
         handleCanvasPointerDown,

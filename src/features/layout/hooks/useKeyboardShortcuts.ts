@@ -14,6 +14,8 @@ interface UseKeyboardShortcutsOptions {
     deleteItem: (id?: string) => void;
     copy: () => void;
     paste: () => void;
+    onGroup?: () => void;
+    onUngroup?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -27,6 +29,8 @@ export function useKeyboardShortcuts({
     deleteItem,
     copy,
     paste,
+    onGroup,
+    onUngroup,
 }: UseKeyboardShortcutsOptions) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -70,6 +74,22 @@ export function useKeyboardShortcuts({
                 if (isInputFocused) return;
                 e.preventDefault();
                 paste();
+                return;
+            }
+
+            // Group (Ctrl+G)
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G') && !e.shiftKey) {
+                if (isInputFocused) return;
+                e.preventDefault();
+                if (onGroup && selectedIds.length >= 2) onGroup();
+                return;
+            }
+
+            // Ungroup (Ctrl+Shift+G)
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G') && e.shiftKey) {
+                if (isInputFocused) return;
+                e.preventDefault();
+                if (onUngroup) onUngroup();
                 return;
             }
 
@@ -120,5 +140,5 @@ export function useKeyboardShortcuts({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedIds, setSelectedIds, moveItem, deleteItem, copy, paste, items, scale, onToggleFullscreen, dispatch]);
+    }, [selectedIds, setSelectedIds, moveItem, deleteItem, copy, paste, items, scale, onToggleFullscreen, dispatch, onGroup, onUngroup]);
 }

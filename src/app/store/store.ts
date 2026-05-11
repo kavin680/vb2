@@ -47,7 +47,11 @@ const combineReducer = combineReducers({
       'pages/updateItemInPage',
       'pages/deleteItemFromPage',
       'pages/setAllItemsInPage',
-      'pages/clearPage'
+      'pages/clearPage',
+      'pages/createComponentGroup',
+      'pages/ungroupComponent',
+      'pages/updateItemsInPage',
+      'pages/deleteItemsFromPage',
     ]),
   }),
   modals: undoable(modalsReducer, {
