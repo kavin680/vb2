@@ -379,7 +379,9 @@ function CanvasItemComponent({ item, onSelect, onEdit, draggable = true, editabl
         zIndex: item.zIndex !== undefined ? item.zIndex : APP_CONFIG.DEFAULTS.Z_INDEX,
         opacity: isVisible || editableHidden ? 1 : 0,
         pointerEvents: (isVisible || editableHidden) ? 'auto' : 'none',
-        outline: isSelected ? "2px solid #007bff" : (draggable ? "2px solid transparent" : "none"),
+        outline: isSelected
+          ? (item.groupId ? "2px solid #6366f1" : "2px solid #007bff")
+          : (draggable ? "2px solid transparent" : "none"),
         outlineOffset: "2px",
         boxShadow: isSelected ? "0 0 0 4px rgba(0, 123, 255, 0.15)" : "none",
         transform: buildTransform(),

@@ -8,18 +8,20 @@ import { CanvasItem } from "../canvas/CanvasItem";
 import Property from "../properties/Property";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../app/store/store";
-import { selectActivePageItems, selectPagesState, selectModalsState } from "../../app/store/selectors";
+import { selectActivePageItems, selectPagesState, selectModalsState, selectActivePageComponentGroups } from "../../app/store/selectors";
 import { ElementManager } from "../../elements";
 import { APP_CONFIG, resolveApiUrls } from "../../shared/config";
 import { useVariablesLive } from "../../shared/hooks/useVariablesLive";
 import { useAlarmsLive } from '../../shared/hooks/useAlarmsLive';
 import { fetchReadVariablesThunk, fetchWriteVariablesThunk } from "../../app/store/variablesSlice";
+import { createComponentGroup, ungroupComponent } from "../../app/store/pageSlice";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../auth/authSlice";
 import { useConfirmDialog } from "../../shared/components/ConfirmDialog";
 import { ROUTES } from "../../shared/constants/routes";
 import { FloatingAlignmentToolbar } from "../toolbar/FloatingAlignmentToolbar";
 import { KeyboardShortcutsDialog } from "../toolbar/KeyboardShortcutsDialog";
+import { CanvasContextMenu } from "../canvas/CanvasContextMenu";
 import { WorkspaceTopBar } from "./components/WorkspaceTopBar";
 import {
     useItemActions,
@@ -61,6 +63,7 @@ export function WorkspaceArea({
     const activePageName = pages[activePage]?.name || 'Screen';
 
     const items = useSelector(selectActivePageItems);
+    const componentGroups = useSelector(selectActivePageComponentGroups);
     const canvasRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
     const [groupResize, setGroupResize] = useState<{
@@ -97,11 +100,13 @@ export function WorkspaceArea({
         selectedItemsList,
         isPropertiesOpen,
         setIsPropertiesOpen,
+        editingGroupId,
+        setEditingGroupId,
         handleSelect,
         handleEdit,
         handleCanvasPointerDown,
         handleCanvasClick,
-    } = useCanvasSelection({ items, scale, canvasRef });
+    } = useCanvasSelection({ items, scale, canvasRef, componentGroups });
 
     const { propertyPos, handlePropHeaderDown, handlePropPointerMove, handlePropPointerUp } =
         usePropertyPanel();
@@ -168,6 +173,56 @@ export function WorkspaceArea({
         dispatchUpdate(id, newProps);
     }, [selectedIds, items, dispatchBatchUpdate, dispatchUpdate]);
 
+    // --- Context menu ---
+
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+    const handleContextMenu = useCallback((e: React.MouseEvent) => {
+        if (selectedIds.length === 0) return;
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY });
+    }, [selectedIds]);
+
+    // --- Group/Ungroup ---
+
+    const handleGroupSelected = useCallback(() => {
+        if (selectedIds.length < 2) return;
+        const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        dispatch(createComponentGroup({ id: groupId, name: 'Component', childIds: selectedIds }));
+    }, [dispatch, selectedIds]);
+
+    const handleUngroupSelected = useCallback(() => {
+        const groupIds = new Set<string>();
+        selectedIds.forEach(id => {
+            const item = items.find(i => i.id === id);
+            if (item?.groupId) groupIds.add(item.groupId);
+        });
+        groupIds.forEach(gid => dispatch(ungroupComponent(gid)));
+        setEditingGroupId(null);
+    }, [dispatch, selectedIds, items, setEditingGroupId]);
+
+    const handleEnterGroupEdit = useCallback(() => {
+        if (selectedIds.length === 0) return;
+        const item = items.find(i => i.id === selectedIds[0]);
+        if (item?.groupId) {
+            setEditingGroupId(item.groupId);
+            setSelectedIds([selectedIds[0]]);
+        }
+    }, [selectedIds, items, setEditingGroupId, setSelectedIds]);
+
+    const handleExitGroupEdit = useCallback(() => {
+        setEditingGroupId(null);
+    }, [setEditingGroupId]);
+
+    const selectedGroupIds = (() => {
+        const gids = new Set<string>();
+        selectedIds.forEach(id => {
+            const item = items.find(i => i.id === id);
+            if (item?.groupId) gids.add(item.groupId);
+        });
+        return gids;
+    })();
+
     // --- Clipboard ---
 
     const { clipboard: _clipboard, copy, paste } = useClipboard({
@@ -175,6 +230,7 @@ export function WorkspaceArea({
         selectedIds,
         setSelectedIds,
         dispatchAdd,
+        componentGroups,
     });
 
     // --- Keyboard shortcuts ---
@@ -190,6 +246,8 @@ export function WorkspaceArea({
         deleteItem,
         copy,
         paste,
+        onGroup: handleGroupSelected,
+        onUngroup: handleUngroupSelected,
     });
 
     // --- Drag and drop ---
@@ -387,7 +445,7 @@ export function WorkspaceArea({
         } catch { /* ignore */ }
     };
 
-    // --- Group bounding box ---
+    // --- Group bounding box (selection) ---
 
     let groupBBox = null;
     if (selectedIds.length > 1) {
@@ -414,6 +472,30 @@ export function WorkspaceArea({
             groupBBox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
         }
     }
+
+    // --- Persistent component group bounding boxes ---
+
+    const componentGroupBBoxes = componentGroups.map(group => {
+        const children = items.filter(i => group.childIds.includes(i.id));
+        if (children.length === 0) return null;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        children.forEach(item => {
+            minX = Math.min(minX, item.x);
+            minY = Math.min(minY, item.y);
+            maxX = Math.max(maxX, item.x + (item.width ?? 100));
+            maxY = Math.max(maxY, item.y + (item.height ?? 40));
+        });
+        const isSelected = children.some(c => selectedIds.includes(c.id));
+        return {
+            id: group.id,
+            name: group.name,
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+            isSelected,
+        };
+    }).filter((b): b is NonNullable<typeof b> => b !== null);
 
     // --- Render ---
 
@@ -478,44 +560,89 @@ export function WorkspaceArea({
                             canvasRef={canvasRef}
                             width="100%"
                             height="100%"
-                            onCanvasClick={handleCanvasClick}
+                            onCanvasClick={() => { handleCanvasClick(); setContextMenu(null); }}
                             onCanvasPointerDown={handleCanvasPointerDown}
                             onScaleChange={setScale}
                         >
-                            {items.map((item) => (
-                                <CanvasItem
-                                    key={item.id}
-                                    item={item}
-                                    onSelect={handleSelect}
-                                    onEdit={handleEdit}
-                                    isSelected={selectedIds.includes(item.id)}
-                                    editableHidden
-                                    onUpdate={(id, updates) => dispatchUpdate(id, updates)}
-                                    onResizeMove={handleGroupResizeMove}
-                                    onResizeEnd={handleGroupResizeEnd}
-                                    groupResizeDelta={groupResize && groupResize.activeId !== item.id ? groupResize : null}
-                                    groupResizeSnapshot={groupResize && groupResizeOrigin.current
-                                        ? groupResizeOrigin.current.items.find(s => s.id === item.id) ?? null
-                                        : null}
-                                />
-                            ))}
-                            {groupBBox && (
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        left: (groupBBox.x * scale),
-                                        top: (groupBBox.y * scale),
-                                        width: groupBBox.width * scale,
-                                        height: groupBBox.height * scale,
-                                        border: '1px dashed #007bff',
-                                        backgroundColor: 'rgba(0, 123, 255, 0.05)',
-                                        pointerEvents: 'none',
-                                        zIndex: 9999,
-                                        boxSizing: 'border-box',
-                                        transform: 'translate(var(--multi-drag-x), var(--multi-drag-y))'
-                                    }}
-                                />
-                            )}
+                            <div onContextMenu={handleContextMenu} style={{ width: '100%', height: '100%' }}>
+                                {/* Persistent component group boundaries */}
+                                {componentGroupBBoxes.map(bbox => (
+                                    <div
+                                        key={bbox.id}
+                                        style={{
+                                            position: 'absolute',
+                                            left: bbox.x * scale,
+                                            top: bbox.y * scale,
+                                            width: bbox.width * scale,
+                                            height: bbox.height * scale,
+                                            border: bbox.isSelected
+                                                ? `2px solid ${editingGroupId === bbox.id ? '#f59e0b' : '#6366f1'}`
+                                                : '1px solid rgba(99, 102, 241, 0.3)',
+                                            backgroundColor: editingGroupId === bbox.id
+                                                ? 'rgba(245, 158, 11, 0.05)'
+                                                : bbox.isSelected
+                                                    ? 'rgba(99, 102, 241, 0.05)'
+                                                    : 'transparent',
+                                            borderRadius: '2px',
+                                            pointerEvents: 'none',
+                                            zIndex: 9998,
+                                            boxSizing: 'border-box',
+                                            transition: 'border-color 0.15s, background-color 0.15s',
+                                        }}
+                                    >
+                                        <span style={{
+                                            position: 'absolute',
+                                            top: '-18px',
+                                            left: '2px',
+                                            fontSize: '10px',
+                                            color: editingGroupId === bbox.id ? '#d97706' : '#6366f1',
+                                            fontWeight: 600,
+                                            background: '#fff',
+                                            padding: '0 4px',
+                                            borderRadius: '2px',
+                                            whiteSpace: 'nowrap',
+                                            opacity: bbox.isSelected ? 1 : 0.6,
+                                        }}>
+                                            {editingGroupId === bbox.id ? `Editing: ${bbox.name}` : bbox.name}
+                                        </span>
+                                    </div>
+                                ))}
+
+                                {items.map((item) => (
+                                    <CanvasItem
+                                        key={item.id}
+                                        item={item}
+                                        onSelect={handleSelect}
+                                        onEdit={handleEdit}
+                                        isSelected={selectedIds.includes(item.id)}
+                                        editableHidden
+                                        onUpdate={(id, updates) => dispatchUpdate(id, updates)}
+                                        onResizeMove={handleGroupResizeMove}
+                                        onResizeEnd={handleGroupResizeEnd}
+                                        groupResizeDelta={groupResize && groupResize.activeId !== item.id ? groupResize : null}
+                                        groupResizeSnapshot={groupResize && groupResizeOrigin.current
+                                            ? groupResizeOrigin.current.items.find(s => s.id === item.id) ?? null
+                                            : null}
+                                    />
+                                ))}
+                                {groupBBox && (
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            left: (groupBBox.x * scale),
+                                            top: (groupBBox.y * scale),
+                                            width: groupBBox.width * scale,
+                                            height: groupBBox.height * scale,
+                                            border: '1px dashed #007bff',
+                                            backgroundColor: 'rgba(0, 123, 255, 0.05)',
+                                            pointerEvents: 'none',
+                                            zIndex: 9999,
+                                            boxSizing: 'border-box',
+                                            transform: 'translate(var(--multi-drag-x), var(--multi-drag-y))'
+                                        }}
+                                    />
+                                )}
+                            </div>
                             {items.length === 0 && (
                                 <div className="empty-state">
                                     <p>Click components from the sidebar to add them here</p>
@@ -577,6 +704,67 @@ export function WorkspaceArea({
                     </div>
                 )}
             </div>
+
+            {/* Group edit mode banner */}
+            {editingGroupId && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: 16,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: '#fef3c7',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    zIndex: 20000,
+                    fontSize: '13px',
+                    color: '#92400e',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                }}>
+                    <span style={{ fontWeight: 600 }}>Editing Component</span>
+                    <span style={{ color: '#b45309' }}>Click outside or press Escape to exit</span>
+                    <button
+                        onClick={handleExitGroupEdit}
+                        style={{
+                            background: '#f59e0b',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '4px 12px',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                        }}
+                    >
+                        Done
+                    </button>
+                </div>
+            )}
+
+            {/* Context menu */}
+            {contextMenu && (
+                <CanvasContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onClose={() => setContextMenu(null)}
+                    canGroup={selectedIds.length >= 2 && !editingGroupId}
+                    canUngroup={selectedGroupIds.size > 0}
+                    canEditGroup={selectedGroupIds.size === 1 && !editingGroupId}
+                    isEditingGroup={!!editingGroupId}
+                    onGroup={handleGroupSelected}
+                    onUngroup={handleUngroupSelected}
+                    onEditGroup={handleEnterGroupEdit}
+                    onExitGroupEdit={handleExitGroupEdit}
+                    onCopy={copy}
+                    onPaste={paste}
+                    onDelete={() => deleteItem()}
+                    hasClipboard={_clipboard.items.length > 0}
+                />
+            )}
+
             {ConfirmDialog()}
             <KeyboardShortcutsDialog />
         </DndContext>

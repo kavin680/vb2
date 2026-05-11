@@ -86,3 +86,16 @@ export const selectProjectName = (state: RootState) => state.pages.present.proje
  * Selector for groups
  */
 export const selectGroups = (state: RootState) => state.pages.present.groups;
+
+/**
+ * Selector for component groups on the active page
+ */
+export const selectActivePageComponentGroups = createSelector(
+    [
+        (state: RootState) => state.pages.present.pages,
+        (state: RootState) => state.pages.present.activePage,
+    ],
+    (pages, activePage) => {
+        return pages[activePage]?.componentGroups || [];
+    }
+);
