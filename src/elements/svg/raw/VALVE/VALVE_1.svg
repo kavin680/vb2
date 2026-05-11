@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="2.8040in"
+   height="1.4792in"
+   viewBox="0 0 527 278"
+   version="1.1"
+   id="svg954"
+   sodipodi:docname="3-D Gate valve.svg"
+   inkscape:version="1.0.2-2 (e86c870879, 2021-01-15)">
+  <metadata
+     id="metadata960">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs958" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     id="namedview956"
+     showgrid="false"
+     inkscape:zoom="3.8709583"
+     inkscape:cx="134.592"
+     inkscape:cy="71.0016"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg954" />
+  <g
+     id="HA_ANI"
+     inkscape:label="HA_ANI">
+    <path
+       style="fill:#7f7f7f"
+       d="M14,264 l0,-250 499,250 0,-250 -499,250z"
+       id="path940" />
+    <path
+       style="fill:#999"
+       d="M14,251 l0,-224 499,224 0,-224 -499,224z"
+       id="path942" />
+    <path
+       style="fill:#b2b2b2"
+       d="M14,225 l0,-173 499,173 0,-173 -499,173z"
+       id="path944" />
+    <path
+       style="fill:#ccc"
+       d="M14,200 l0,-122 499,122 0,-122 -499,122z"
+       id="path946" />
+    <path
+       style="fill:#e5e5e5"
+       d="M14,180 l0,-83 499,83 0,-83 -499,83z"
+       id="path948" />
+    <path
+       style="fill:#fff"
+       d="M14,155 l0,-32 499,32 0,-32 -499,32z"
+       id="path950" />
+    <path
+       style="fill:none;stroke:#000;stroke-width:2"
+       d="M14,264 l0,-250 499,250 0,-250 -499,250"
+       id="path952" />
+  </g>
+</svg>

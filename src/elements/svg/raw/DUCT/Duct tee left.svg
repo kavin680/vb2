@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000303 Stylable//EN"
+"http://www.w3.org/TR/2000/03/WD-SVG-20000303/DTD/svg-20000303-stylable.dtd">
+
+<svg width="1.2941in" height="1.4792in" viewBox="0 0 874 999">
+
+<path style="fill:#ccc;stroke:#000;stroke-width:2" d="M784,28 l0,880 -628,0 0,-126 -128,0 0,-628 128,0 0,-126 628,0z" />
+<path style="fill:none;stroke:#7f7f7f;stroke-width:2" d="M784,154 l-628,0 0,628 628,0" />
+<path style="fill:#4c4c4c;stroke:#000;stroke-width:2" d="M129,970 l0,-95 -21,0 0,95 21,0z" />
+<path style="fill:#4c4c4c;stroke:#000;stroke-width:2" d="M831,970 l0,-95 -20,0 0,95 20,0z" />
+<path style="fill:#b2b2b2;stroke:#000;stroke-width:2" d="M92,939 l0,-33 754,0 0,33 -754,0z" />
+<path style="fill:#bfbfbf" d="M176,173 l294,293 -294,295 0,-588z" />
+<path style="fill:#ccc" d="M763,173 l-293,293 293,295 0,-588z" />
+<path style="fill:#b2b2b2" d="M763,174 l-293,292 -296,-292 589,0z" />
+<path style="fill:#d9d9d9" d="M763,761 l-293,-295 -296,295 589,0z" />
+
+</svg>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000303 Stylable//EN"
+"http://www.w3.org/TR/2000/03/WD-SVG-20000303/DTD/svg-20000303-stylable.dtd">
+
+<svg width="1.4836in" height="1.4792in" viewBox="0 0 998 995">
+
+<path style="fill:#ccc;stroke:#000;stroke-width:2" d="M970,967 l-942,0 0,-782 155,0 0,-157 782,0 0,157 5,782z" />
+<path style="fill:none;stroke:#7f7f7f;stroke-width:2" d="M965,185 l-782,0 0,782" />
+<path style="fill:#bfbfbf" d="M206,206 l363,365 -363,366 0,-731z" />
+<path style="fill:#ccc" d="M935,206 l-366,365 366,366 0,-731z" />
+<path style="fill:#b2b2b2" d="M935,208 l-366,363 -365,-363 731,0z" />
+<path style="fill:#d9d9d9" d="M935,937 l-366,-366 -365,366 731,0z" />
+
+</svg>
